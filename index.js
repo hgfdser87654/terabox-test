@@ -43,7 +43,7 @@ app.get('/api', async (req, res) => {
   const fileCode = match[1];
 
   try {
-    const apiUrl = `https://www.terabox.com/share/list?app_id=250528&shorturl=${fileCode}&root=1`;
+    const apiUrl = `https://www.1024terabox.com/share/list?app_id=250528&shorturl=${fileCode}&root=1`;
     const response = await axios.get(apiUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
