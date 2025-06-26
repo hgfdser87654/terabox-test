@@ -20,7 +20,7 @@ app.get('/api', async (req, res) => {
 
   try {
     const fileCode = link.split("/s/")[1].split("?")[0];
-    const apiUrl = https://www.terabox.com/share/list?app_id=250528&shorturl=${fileCode}&root=1;
+    const apiUrl = `https://www.terabox.com/share/list?app_id=250528&shorturl=${fileCode}&root=1`;
 
     const response = await axios.get(apiUrl, {
       headers: {
@@ -32,9 +32,9 @@ app.get('/api', async (req, res) => {
     if (!file) return res.status(404).json({ error: "File not found" });
 
     const extension = file.server_filename.split('.').pop();
-    const thumb = file.thumbs?.url3  file.thumbs?.url2  file.thumbs?.url1 || null;
+    const thumb = file.thumbs?.url3 || file.thumbs?.url2 || file.thumbs?.url1 || null;
 
-    const downloadLink = https://d.pcs.baidu.com/file/${file.fs_id}?fid=${file.fs_id}&time=${Date.now()}&rt=sh&sign=static-sign&expires=9999999999&chk=hash;
+    const downloadLink = `https://d.pcs.baidu.com/file/${file.fs_id}?fid=${file.fs_id}&time=${Date.now()}&rt=sh&sign=static-sign&expires=9999999999&chk=hash`;
 
     res.json({
       name: file.server_filename,
@@ -51,5 +51,5 @@ app.get('/api', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(🚀 Server running on port ${PORT});
+  console.log(`🚀 Server running on port ${PORT}`);
 });
