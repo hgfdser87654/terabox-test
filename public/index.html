@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TeraBox Downloader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 2rem; background: #f0f0f0; }
+    input, button { padding: 0.5rem; margin: 0.5rem; width: 80%; max-width: 400px; }
+    .result { margin-top: 2rem; }
+    img { max-width: 300px; border-radius: 10px; margin-top: 1rem; }
+    a.btn { display: inline-block; padding: 0.5rem 1rem; background: #007bff; color: white; margin: 0.5rem; text-decoration: none; border-radius: 5px; }
+    a.btn:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+
+  <h2>TeraBox File Info</h2>
+
+  <input id="link" placeholder="Paste TeraBox share link" />
+  <input id="key" placeholder="Enter your API key" />
+
+  <br>
+  <button onclick="getFile()">Get File Info</button>
+
+  <div id="output" class="result"></div>
+
+  <script>
+    async function getFile() {
+      const link = document.getElementById('link').value;
+      const key = document.getElementById('key').value;
+
+      const res = await fetch(/api?link=${encodeURIComponent(link)}&key=${encodeURIComponent(key)});
+      const data = await res.json();
+
+      const out = document.getElementById('output');
+      out.innerHTML = "";
+
+      if (data.error) {
+        out.innerHTML = <p style="color:red;">❌ ${data.error}</p>;
+        return;
+      }
+
+      out.innerHTML = 
+        <h3>${data.name}</h3>
+        <p><strong>Size:</strong> ${data.size} <br> <strong>Type:</strong> ${data.extension}</p>
+        ${data.thumbnail ? <img src="${data.thumbnail}" alt="Thumbnail" /> : ""}
+        <br>
+        <a href="${data.download}" class="btn" target="_blank">📥 Direct Download</a>
+        <a href="${data.stream}" class="btn" target="_blank">▶️ Stream Now</a>
+      ;
+    }
+  </script>
+
+</body>
+</html>
