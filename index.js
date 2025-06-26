@@ -49,7 +49,10 @@ app.get('/api', async (req, res) => {
     });
 
     const file = response.data?.list?.[0];
-    if (!file) return res.status(404).json({ error: "File not found" });
+    if (!file) {
+    console.log("API Response:", response.data); // 🚨 Add this line
+    return res.status(404).json({ error: "File not found" });
+    }
 
     const extension = file.server_filename.split('.').pop();
     const thumb = file.thumbs?.url3 || file.thumbs?.url2 || file.thumbs?.url1 || null;
