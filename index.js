@@ -1,114 +1,46 @@
-const express = require('express');
-const axios = require('axios');
-const path = require('path');
-const app = express();
-const PORT = process.env.PORT || 3000;
+const express = require("express"); const puppeteer = require("puppeteer"); const fs = require("fs"); const cors = require("cors");
 
-// ✅ Your secret API key
-const VALID_KEY = 'MRINMOY';
+const app = express(); app.use(cors());
 
-// ✅ Serve frontend
-app.use(express.static(path.join(__dirname, 'public')));
+const PORT = 3000;
 
-// ✅ Format file size
-function formatSize(bytes) {
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  if (bytes === 0) return '0 Byte';
-  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-  return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
-}
+app.get("/api", async (req, res) => { const link = req.query.link; if (!link) return res.status(400).json({ error: "No link provided" });
 
-// ✅ Welcome
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+try { const cookiesRaw = fs.readFileSync("cookies.txt", "utf8"); const cookies = cookiesRaw.split("; ").map(pair => { const [name, value] = pair.split("="); return { name, value, domain: ".terabox.com" }; });
+
+const browser = await puppeteer.launch({
+  headless: "new",
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
+const page = await browser.newPage();
+
+await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+await page.setExtraHTTPHeaders({ referer: "https://www.terabox.com/" });
+
+await page.setCookie(...cookies);
+await page.goto(link, { waitUntil: "networkidle2", timeout: 60000 });
+
+const data = await page.evaluate(() => {
+  const title = document.querySelector(".filename")?.textContent || null;
+  const size = document.querySelector(".filesize")?.textContent || null;
+  const thumb = document.querySelector(".preview-img")?.src || null;
+  const ext = title ? title.split(".").pop() : null;
+  const dlink = document.querySelector(".download-button")?.href || null;
+  return { title, size, thumb, ext, dlink };
 });
 
-// ✅ API: Get file info + links
-app.get('/api', async (req, res) => {
-  const { link, key } = req.query;
+await browser.close();
 
-  if (!key) {
-    return res.status(403).json({ error: "API key required. DM t.me/M_o_Y_zZz" });
-  }
-  if (key !== VALID_KEY) {
-    return res.status(403).json({ error: "Invalid key. DM t.me/M_o_Y_zZz" });
-  }
-  if (!link) return res.status(400).json({ error: "Missing 'link' parameter" });
+if (!data.title) return res.status(404).json({ error: "File not found or protected." });
 
-  const match = link.match(/\/s\/([^?]+)/);
-  if (!match || !match[1]) {
-    return res.status(400).json({ error: "Invalid TeraBox share link" });
-  }
-
-  const fileCode = match[1];
-
-  try {
-    const apiUrl = `https://www.1024terabox.com/share/list?app_id=250528&shorturl=${fileCode}&root=1`;
-    const response = await axios.get(apiUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-
-    const file = response.data?.list?.[0];
-    if (!file) {
-    console.log("API Response:", response.data); // 🚨 Add this line
-    return res.status(404).json({ error: "File not found" });
-    }
-
-    const extension = file.server_filename.split('.').pop();
-    const thumb = file.thumbs?.url3 || file.thumbs?.url2 || file.thumbs?.url1 || null;
-
-    const downloadLink = `https://d.pcs.baidu.com/file/${file.fs_id}?fid=${file.fs_id}&time=${Date.now()}&rt=sh&sign=static-sign&expires=9999999999&chk=hash`;
-
-    res.json({
-      name: file.server_filename,
-      size: formatSize(file.size),
-      extension,
-      download: downloadLink,
-      thumbnail: thumb,
-      stream: `${req.protocol}://${req.get('host')}/stream?link=${encodeURIComponent(downloadLink)}&key=${key}`
-    });
-
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
+res.json({
+  filename: data.title,
+  size: data.size,
+  extension: data.ext,
+  thumbnail: data.thumb,
+  download_url: data.dlink
 });
 
-// ✅ Stream Proxy
-app.get('/stream', async (req, res) => {
-  const { link, key } = req.query;
+} catch (error) { console.error("API Error:", error); res.status(500).json({ error: "Server error. Try again later." }); } });
 
-  if (!key || key !== VALID_KEY) {
-    return res.status(403).json({ error: "Unauthorized stream. DM t.me/M_o_Y_zZz" });
-  }
-
-  if (!link) {
-    return res.status(400).json({ error: "Missing 'link' parameter" });
-  }
-
-  try {
-    const streamResponse = await axios({
-      method: 'get',
-      url: link,
-      responseType: 'stream',
-      headers: {
-        'User-Agent': 'Mozilla/5.0'
-      }
-    });
-
-    res.set({
-      'Content-Type': 'video/mp4',
-      'Content-Disposition': 'inline'
-    });
-
-    streamResponse.data.pipe(res);
-
-  } catch (err) {
-    console.error("Stream error:", err.message);
-    res.status(500).json({ error: "Streaming failed" });
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, () => { console.log(✅ Server running on port ${PORT}); });
